@@ -15,7 +15,7 @@ Future<void> main() async {
       dependencies: AppDependencies(
         store: store,
         captureService: CaptureService(store: store),
-        processing: ImageProcessingService.unavailable(),
+        processing: ImageProcessingService.local(),
       ),
     ),
   );

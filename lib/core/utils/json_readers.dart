@@ -62,6 +62,13 @@ bool readBool(Object? value, String field) {
   throw FormatException('Expected a boolean for $field.');
 }
 
+bool readBoolOr(Object? value, bool fallback) {
+  if (value is bool) {
+    return value;
+  }
+  return fallback;
+}
+
 List<String> readStringList(Object? value) {
   if (value is! List) {
     return const [];

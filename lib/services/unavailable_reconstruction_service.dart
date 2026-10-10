@@ -20,7 +20,11 @@ class UnavailableSuperResolutionService implements SuperResolutionService {
   bool get isAvailable => false;
 
   @override
-  Future<ReconstructionResult> reconstruct(ReconstructionRequest request) async {
+  Future<ReconstructionResult> reconstruct(
+    ReconstructionRequest request, {
+    void Function(ReconstructionProgress progress)? onProgress,
+    ReconstructionCancellation? cancellation,
+  }) async {
     final clock = Stopwatch()..start();
     clock.stop();
     return ReconstructionResult.unavailable(

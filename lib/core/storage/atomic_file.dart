@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 /// Writes [contents] by flushing a sibling temp file and then renaming it.
 ///
@@ -17,6 +18,27 @@ Future<void> writeStringAtomic(File target, String contents) async {
     rethrow;
   }
   await sink.close();
+  try {
+    await temporary.rename(target.path);
+  } on FileSystemException {
+    if (await target.exists()) {
+      await target.delete();
+    }
+    await temporary.rename(target.path);
+  }
+}
+
+/// Writes [bytes] by flushing a sibling temp file and then renaming it.
+Future<void> writeBytesAtomic(File target, Uint8List bytes) async {
+  final temporary = File('${target.path}.tmp');
+  try {
+    await temporary.writeAsBytes(bytes, flush: true);
+  } catch (error) {
+    if (await temporary.exists()) {
+      await temporary.delete();
+    }
+    rethrow;
+  }
   try {
     await temporary.rename(target.path);
   } on FileSystemException {

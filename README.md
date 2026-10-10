@@ -1,8 +1,8 @@
 # Crystal Scan
 
-Crystal Scan captures a sequence of still photographs of a stationary object and stores the original frames for a later computational-photography stage. The first version is a capture and review tool. It does not reconstruct an image.
+Crystal Scan captures a sequence of still photographs of a stationary object and reconstructs a cleaner image on the device. The same pipeline is used for circuits, plants, documents, textures, and other ordinary photographs. The user does not pick a subject category.
 
-The intended subjects are electronic circuit boards, solder joints, copper traces, and other small surface detail, photographed with a phone on a tripod.
+A tripod keeps the phone still. It does not by itself create the subpixel shifts a resolution increase needs. Capturing more frames does not automatically raise resolution, and this app does not claim a 12K result.
 
 ## What this version does
 
@@ -12,7 +12,7 @@ The intended subjects are electronic circuit boards, solder joints, copper trace
 - Saves originals under app storage at `crystal_scan/sessions/<session_id>/frames/`.
 - Writes `session.json` atomically after each frame.
 - Shows a session summary, thumbnails, and a single-frame viewer.
-- Keeps a reconstruction screen that reports the engine as not implemented.
+- Reconstructs a saved session locally: quality checks, intensity registration, robust averaging, and 2× shift-and-add only when the frames contain a useful subpixel shift and the output fits a pixel budget.
 
 Autofocus and auto exposure run once before the first frame. They are not repeated between frames. ISO, shutter speed, focus distance, and the current exposure compensation are not recorded, because the camera plugin does not expose them without changing the image.
 
@@ -20,9 +20,40 @@ A tripod keeps the phone still. It does not by itself create the subpixel shifts
 
 ## Reconstruction
 
-The processing API accepts the original file paths and returns a `ReconstructionResult`. The bundled engine is `UnavailableSuperResolutionService`. It does not decode frames, write an output file, or report an effective resolution.
+Open a saved session and tap **Continue to reconstruction**, then **Run reconstruction**. Processing runs in a background isolate. Progress follows the stage that is actually running. Cancel stops the run before an output image is written.
 
-Output pixel dimensions, optical resolution, and measured effective resolution are separate. Nothing in this version should be described as 12K, super-resolved, or enhanced.
+Results are stored beside the originals:
+
+```text
+crystal_scan/sessions/<session_id>/
+  frames/frame_0001.jpg
+  results/denoised.png
+  results/super_resolution.png   # only when 2× reconstruction ran
+  results/reconstruction.json
+```
+
+Original JPEGs are opened read-only. The results screen compares the reference frame with the reconstruction, zooms without a display downsample, and can write a TIFF or share the PNG. On a desktop build without a share sheet, sharing reports that the file is already saved.
+
+`denoised.png` is a native-resolution robust average. `super_resolution.png` is a separate 2× shift-and-add with two back-projection steps. If the shifts are whole pixels, the texture is ambiguous, a rotation was required, or a 2× image would exceed four million pixels, only the denoise is saved. Output pixel dimensions are not a measurement of effective optical resolution. That is stated on the result.
+
+Registration is a coarse-to-fine intensity search for translation, plus a rotation of at most two degrees. It is not a homography and it does not solve parallax. Focus stacking and generative enhancement are not part of this pipeline.
+
+The implementation uses Dart and `package:image`. `opencv_dart` is not used, so the same code runs under `flutter test` without a native OpenCV build. Feature matching and ECC are not available.
+
+## Reconstruct a 32-frame session
+
+1. Capture 32 frames, or open an existing session from the session list.
+2. On the summary, tap **Continue to reconstruction**.
+3. Leave **Allow super-resolution** on unless you only want the denoise. The control is under the tune icon.
+4. Tap **Run reconstruction** and wait until the result screen opens. The run is not finished while the output file is missing.
+5. Compare with the slider, then pinch to zoom. Fit returns to the full frame.
+6. The reference frame is the original JPEG. The reconstruction is the PNG named above.
+
+A 12-megapixel capture stays at native resolution: a 2× image would be about 48 megapixels, past the working limit. That limit is intentional. It is not a 12K reconstruction that was scaled back down.
+
+## What is still required before a 12K claim
+
+Effective resolution has not been measured on a resolution target. Pixel dimensions, PSNR, and high-frequency MAD do not replace that measurement. A genuine 12K claim would also need a validated blur and sampling model, subpixel shifts on the full sensor grid, a solver that fits in phone memory at that size, and an independent target measurement. None of those are done here.
 
 ## Run on an Android phone
 

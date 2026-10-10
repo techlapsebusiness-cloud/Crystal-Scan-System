@@ -1,5 +1,8 @@
 import 'package:microscopeapp/models/reconstruction_result.dart';
 
+export 'package:microscopeapp/models/reconstruction_result.dart'
+    show ReconstructionCancellation, ReconstructionProgress;
+
 /// Estimates the unknown high-resolution image x from observed frames y_i.
 ///
 /// A future implementation may solve y_i = D(H_i x) + n_i by validating
@@ -14,5 +17,9 @@ abstract class SuperResolutionService {
 
   bool get isAvailable;
 
-  Future<ReconstructionResult> reconstruct(ReconstructionRequest request);
+  Future<ReconstructionResult> reconstruct(
+    ReconstructionRequest request, {
+    void Function(ReconstructionProgress progress)? onProgress,
+    ReconstructionCancellation? cancellation,
+  });
 }
